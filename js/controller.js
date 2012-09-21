@@ -252,7 +252,7 @@ function controller()
                                     var recordTableEntryTask = $("<td/>");
                                     var recordTableEntryTaskLink = $("<a/>");
                                     recordTableEntryTaskLink.text(issue.title);
-                                    recordTableEntryTaskLink.attr("href", issue.url);
+                                    recordTableEntryTaskLink.attr("href", issue.html_url);
                                     recordTableEntryTask.append(recordTableEntryTaskLink);
                                     recordTableEntry.append(recordTableEntryTask);
                                     
@@ -299,11 +299,11 @@ function controller()
                             });
                         });
                     }
-                    
-                    self.stopActivityIndicator();
                     self.newRecordTaskSelector.removeAttr("selected");
                 });
             }
+            
+            self.stopActivityIndicator();
         });
     }
     
