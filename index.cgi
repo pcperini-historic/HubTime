@@ -4,7 +4,7 @@
 import sys
 import cgi
 import jinja2
-from libs.github import github
+from libs import github
 
 # Globals
 environment = jinja2.Environment(loader = jinja2.PackageLoader(__name__))
@@ -29,8 +29,7 @@ if __name__ == "__main__":
         username = form.getvalue('username')
         password = form.getvalue('password')
     
-        githubConnection = github.GitHub(username, password)
-        githubUser = githubConnection.users.show(username)
+        githubUser = github.user(username, password)
         write(str(githubUser))
         
         if target == 'user':
