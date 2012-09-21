@@ -28,9 +28,9 @@ if __name__ == "__main__":
     else: # API
         username = form.getvalue('username')
         password = form.getvalue('password')
+        write(username + " " + password)
     
         githubUser = github.user(username, password)
-        write(str(githubUser))
         
         if target == 'user':
             pass
