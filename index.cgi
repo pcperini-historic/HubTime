@@ -4,6 +4,7 @@
 import sys
 import cgi
 import jinja2
+import urllib2
 from libs import github
 
 # Globals
@@ -26,8 +27,8 @@ if __name__ == "__main__":
         write(template.render(), "text/html")
     
     else: # API
-        username = form.getvalue('username')
-        password = form.getvalue('password')
+        username = urllib2.unquote(form.getvalue('username'))
+        password = urllib2.unquote(form.getvalue('password'))
     
         githubUser = github.user(username, password)
         write(str(githubUser))
