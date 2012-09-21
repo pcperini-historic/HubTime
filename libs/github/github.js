@@ -18,7 +18,7 @@
     function _request(method, path, data, cb, raw) {
       function getURL() {
         var url = API_URL + path;
-        return url + ((/\?/).test(url) ? "&" : "?callback=null&") + (new Date()).getTime();
+        return url + ((/\?/).test(url) ? "&" : "?callback=cb&") + (new Date()).getTime();
       }
 
       var xhr = new XMLHttpRequest();
