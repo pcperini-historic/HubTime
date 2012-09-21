@@ -29,6 +29,7 @@ if __name__ == "__main__":
     else: # API
         username = urllib2.unquote(form.getvalue('username'))
         password = urllib2.unquote(form.getvalue('password'))
+        write(username+" "+password)
     
         githubUser = github.user(username, password)
         write(str(githubUser))
