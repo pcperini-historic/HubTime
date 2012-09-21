@@ -4,7 +4,7 @@
 import sys
 import cgi
 import jinja2
-from libs import github
+from libs.github import github
 
 # Globals
 environment = jinja2.Environment(loader = jinja2.PackageLoader(__name__))
