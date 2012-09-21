@@ -1,0 +1,7 @@
+- method=GET&target=user
+- method=GET&target=repos
+- method=GET&target=milestones
+- method=GET&target=issues
+- method=GET&target=comments
+- method=ADD&target=comments
+- method=DEL&target=comments

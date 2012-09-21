@@ -7,6 +7,11 @@ import jinja2
 environment = jinja2.Environment(loader = jinja2.PackageLoader(__name__))
 
 if __name__ == "__main__":
-    template = environment.get_template('index.html')
-    print "Content-Type: text/html\n"
-    print template.render()
+    form = cgi.FieldStorage()
+    method = form.getvalue('method')
+    target = form.getvalue('target')
+
+    if not method and not target:
+        template = environment.get_template('index.html')
+        print "Content-Type: text/html\n"
+        print template.render()
