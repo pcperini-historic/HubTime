@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # Imports
+import cgi
 import jinja2
 
 # Globals
