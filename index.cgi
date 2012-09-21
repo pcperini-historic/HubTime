@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # Imports
+import sys
 import cgi
 import jinja2
 from libs import github
@@ -12,6 +13,7 @@ environment = jinja2.Environment(loader = jinja2.PackageLoader(__name__))
 def write(content, type = "text/plain"):
     print "Content-Type: " + type + "\n"
     print content
+    sys.exit(0)
 
 if __name__ == "__main__":
     form = cgi.FieldStorage()
@@ -23,12 +25,14 @@ if __name__ == "__main__":
         write(template.render(), "text/html")
     
     else: # API
+        
+        
         username = form.getvalue('username')
         password = form.getvalue('password')
     
         githubConnection = github.GitHub(username, password)
         githubUser = githubConnection.users.show(username)
-        write(str(githubUser))
+        #write(str(githubUser))
         
         if target == 'user':
             pass
