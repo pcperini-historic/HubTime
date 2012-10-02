@@ -42,8 +42,8 @@ function controller()
     var controllerWelcomeMessage = "Welcome back, ";
     
     // Initializers
-    self.init = function ()
-    {
+    self.init = function()
+    {    
         // Models
         self.user = null;
         self.currentRepo = null;
@@ -93,32 +93,25 @@ function controller()
     
     // Updaters
     self.updateUser = function(username, password)
-    {
-        self.githubConnection = new Github({
-            "username": username,
-            "password": password,
-            "auth": "basic"
-        });
-        
-        self.user = self.githubConnection.getUser();
-        self.user.records = [];
-        
+    {        
+        var userRequestData = {
+            'method': 'GET',
+            'target': 'user',
+            'username': username,
+            'password': password
+        };
+    
         self.startActivityIndicator();
-        self.user.show(username, function(error, info)
+        var userRequest = $.get('', userRequestData);
+        userRequest.success(function(user)
         {
-            if (error)
-            {
-                self.stopActivityIndicator();
-            
-                self.usernameInput.parent().addClass("error");
-                self.passwordInput.parent().addClass("error");
-                return;
-            }
+            self.stopActivityIndicator();
+        
+            self.user = user;
+            self.user.password = password;
             
             $.cookie(controllerUsernameCookie, username);
             $.cookie(controllerPasswordCookie, password);
-            
-            self.user.info = info;
             
             self.usernameInput.parent().removeClass("error");
             self.passwordInput.parent().removeClass("error");
@@ -127,32 +120,46 @@ function controller()
             
             self.userInfoContainer.show();
             
-            self.userAvatar.attr("src", self.user.info.avatar_url);
+            self.userAvatar.attr("src", self.user.avatar_url);
             
-            var firstName = self.user.info.name.split(" ")[0];
+            var firstName = self.user.name.split(" ")[0];
             self.welcomeMessage.text(controllerWelcomeMessage + firstName);
             
-            self.stopActivityIndicator();
-        });
-        
-        self.user.repos(function (error, repos)
-        {
-            if (error)
-            {
-                return;
-            }
-        
-            for (var repoIndex in repos)
-            {
-                var repo = repos[repoIndex];
+            self.startActivityIndicator();
+            var reposRequestData = {
+                'method': 'GET',
+                'target': 'repos',
+                'username': username,
+                'password': password
+            };
             
-                var projectOption = $("<option/>");
-                projectOption.text(repo.name);
+            var reposRequest = $.get('', reposRequestData);
+            reposRequest.success(function(repos)
+            {
+                for (var repoIndex in repos)
+                {
+                    var repo = repos[repoIndex];
                 
-                self.projectSelector.append(projectOption);
-            }
+                    var projectOption = $("<option/>");
+                    projectOption.text(repo.name);
+                    
+                    self.projectSelector.append(projectOption);
+                }
+                
+                self.stopActivityIndicator();
+                self.updateRecordsTable();
+            });
+            reposRequest.error(function()
+            {
+                self.stopActivityIndicator();
+            });
+        });
+        userRequest.error(function()
+        {
+            self.stopActivityIndicator();
             
-            self.updateRecordsTable();
+            self.usernameInput.parent().addClass("error");
+            self.passwordInput.parent().addClass("error");
         });
     }
     
@@ -178,36 +185,52 @@ function controller()
             
         // Add New Data
         var repoName = $("#project-selector option:selected").text();
-        self.currentRepo = self.githubConnection.getRepo(self.user.info.login, repoName);
+        self.currentRepo = repoName;
         
-        self.currentRepo.milestones(function(error, milestones)
+        var milestonesRequestData = {
+            'method': 'GET',
+            'target': 'milestones',
+            'username': self.user.login,
+            'password': self.user.password,
+            'repo': self.currentRepo
+        };
+        
+        // Add Milestones to Task Selector
+        var milestonesRequest = $.get('', milestonesRequestData);
+        milestonesRequest.success(function(milestones)
         {
-            if (error)
-            {
-                return;
-            }
+            self.stopActivityIndicator();
         
             for (var milestoneIndex in milestones)
             {
                 var milestone = milestones[milestoneIndex];
-            
+                
                 var optionGroup = $("<optgroup/>");
                 optionGroup.attr("label", milestone.title);
                 optionGroup.attr("number", milestone.number);
                 
                 self.newRecordTaskSelector.append(optionGroup);
                 
-                self.currentRepo.issues(milestone.number, function(error, issues)
+                var issuesRequestData = {
+                    'method': 'GET',
+                    'target': 'issues',
+                    'username': self.user.login,
+                    'password': self.user.password,
+                    'repo': self.currentRepo,
+                    'milestone': milestone.number
+                };
+                
+                // Add Issues to Task Selector
+                self.startActivityIndicator();
+                var issuesRequest = $.get('', issuesRequestData);
+                issuesRequest.success(function(issues)
                 {
-                    if (error)
-                    {
-                        return;
-                    }
+                    self.stopActivityIndicator();
                     
                     for (var issueIndex in issues)
                     {
                         var issue = issues[issueIndex];
-                        var optionGroup = $("#new-record-task-selector optgroup[number='" + issue.milestone.number + "']");
+                        var optionGroup = $("#new-record-task-selector optgroup[number='" + issue.milestone_number + "']");
                         
                         var option = $("<option/>");
                         option.text(issue.title);
@@ -215,6 +238,41 @@ function controller()
                         
                         optionGroup.append(option);
                         
+                        var commentsRequestData = {
+                            'method': 'GET',
+                            'target': 'comments',
+                            'username': self.user.login,
+                            'password': self.user.password,
+                            'repo': self.currentRepo,
+                            'issue': issue.number
+                        };
+                        
+                        self.startActivityIndicator();
+                        var commentsRequest = $.get('', commentsRequestData)
+                        commentsRequest.success(function(comments)
+                        {
+                            self.stopActivityIndicator();
+                            
+                            console.log(comments);
+                        });
+                        commentsRequest.error(function()
+                        {
+                            self.stopActivityIndicator();
+                        });
+                    }
+                });
+                issuesRequest.error(function()
+                {
+                    self.stopActivityIndicator();
+                });
+            }
+        });
+        milestonesRequest.error(function()
+        {
+            self.stopActivityIndicator();
+        });
+        
+        /*                        
                         self.currentRepo.issueComments(issue, function(issue, error, comments)
                         {
                             if (error)
@@ -304,7 +362,7 @@ function controller()
             }
             
             self.stopActivityIndicator();
-        });
+        });*/
     }
     
     self.updateNewRecordAddButton = function()
@@ -381,8 +439,25 @@ function controller()
         var newRecordComments = self.newRecordCommentInput.val();
         
         var recordString = "`"+ newRecordHours + "h on " + newRecordDate + "`\n\n" + newRecordComments;
-        self.currentRepo.addIssueComment(newRecordIssueNumber, recordString, function (error)
+        var newRecordRequestData = {
+            'method': 'ADD',
+            'target': 'comment',
+            'username': self.user.login,
+            'password': self.user.password,
+            'issue': newRecordIssueNumber,
+            'body': recordString
+        };
+        
+        self.startActivityIndicator();
+        var newRecordRequest = $.get('', newRecordRequestData);
+        newRecordRequest.success(function()
         {
+            self.stopActivityIndicator();
+            self.updateRecordsTable();
+        });
+        newRecordRequest.error(function()
+        {
+            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
     }
@@ -395,9 +470,24 @@ function controller()
             recordEntry = recordEntry.parent();
         
         var recordCommentNumber = recordEntry.attr("number");
+        var removeRecordRequestData = {
+            'method': 'DEL',
+            'target': 'comment',
+            'username': self.user.login,
+            'password': self.user.password,
+            'comment': recordCommentNumber
+        };
         
-        self.currentRepo.removeIssueComment(recordCommentNumber, function (error)
+        self.startActivityIndicator();
+        var removeRecordRequest = $.get('', removeRecordRequestData);
+        removeRecordRequest.success(function()
         {
+            self.stopActivityIndicator();
+            self.updateRecordsTable();
+        });
+        removeRecordRequest.error(function()
+        {
+            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
     }
@@ -406,7 +496,7 @@ function controller()
     self.startActivityIndicator = function()
     {
         self.activityIndicator.show();
-        setInterval(function ()
+        setInterval(function()
         {
             if (self.activityIndicator.css("display") == "none")
                 return;
