@@ -77,6 +77,7 @@ function controller()
         }
         
         self.activityIndicator.showCount = 0;
+        self.recordsTable.tablesorter();
     }
     
     // Updaters
@@ -89,6 +90,7 @@ function controller()
             'password': password
         };
     
+        self.startActivityIndicator();
         var userRequest = $.get('', userRequestData);
         userRequest.success(function(user)
         {
@@ -130,17 +132,20 @@ function controller()
                     self.projectSelector.append(projectOption);
                 }
                 
+                self.stopActivityIndicator();
                 self.updateRecordsTable();
             });
             reposRequest.error(function(request, status, error)
             {
                 console.log(error);
+                self.stopActivityIndicator();
             });
         });
         userRequest.error(function(request, status, error)
         {
             console.log(error);
-            
+            self.stopActivityIndicator();
+                
             self.usernameInput.parent().addClass("error");
             self.passwordInput.parent().addClass("error");
         });
@@ -288,7 +293,8 @@ function controller()
                                     recordTableEntryControl.append(recordTableEntryControlRemoveButton);
                                     recordTableEntry.append(recordTableEntryControl);
                                     
-                                    recordsTableBody.prepend(recordTableEntry);
+                                    recordsTableBody.append(recordTableEntry);
+                                    self.recordsTable.trigger("update");
                                 }
                             }
                         });
@@ -313,6 +319,7 @@ function controller()
     self.updateNewRecordAddButton = function()
     {
         var buttonEnabled = true;
+        buttonEnabled &= Boolean(self.newRecordTaskSelector.val());
         buttonEnabled &= !self.newRecordHoursInput.parent().hasClass("error");
         buttonEnabled &= Boolean(self.newRecordHoursInput.val());
         
@@ -374,14 +381,17 @@ function controller()
             'body': recordString
         };
         
+        self.startActivityIndicator();
         var newRecordRequest = $.get('', newRecordRequestData);
         newRecordRequest.success(function()
         {
+            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
         newRecordRequest.error(function(request, status, error)
         {
             console.log(error);
+            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
     }
@@ -399,14 +409,17 @@ function controller()
             'comment': recordCommentNumber
         };
         
+        self.startActivityIndicator();
         var removeRecordRequest = $.get('', removeRecordRequestData);
         removeRecordRequest.success(function()
         {
+            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
         removeRecordRequest.error(function(request, status, error)
         {
             console.log(error);
+            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
     }

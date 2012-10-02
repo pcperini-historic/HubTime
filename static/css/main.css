@@ -14,6 +14,9 @@ th.header
 {
     /* background */
     background-color: rgb(235, 235, 235);
+    
+    /* cursor */
+    cursor: pointer;
 }
 
 .navbar-fixed-top
