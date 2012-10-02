@@ -302,6 +302,7 @@ function controller()
                                     var recordTableEntryControl = $("<td/>");
                                     var recordTableEntryControlRemoveButton = $("<button/>");
                                     recordTableEntryControlRemoveButton.attr("comment-number", comment.id);
+                                    recordTableEntryControlRemoveButton.attr("title", "Remove record");
                                     recordTableEntryControlRemoveButton.addClass("btn");
                                     recordTableEntryControlRemoveButton.addClass("btn-small");
                                     recordTableEntryControlRemoveButton.addClass("btn-danger");
