@@ -8,33 +8,22 @@ function controller()
     {
         var content = body.replace(info, "");
         content = $.trim(content);
-        return content;
+        
+        content = content.split(/[\.!?]/)[0];
+        return content + '...';
     }
     
-    function parseDate(dateField)
+    function parseDate(dateString)
     {
-        var parts = dateField.text().split("/");
-        var part = parts[0]; parts[0] = parts[1]; parts[1] = part;
-        
-        var currentYear = new Date().getFullYear();
-        
-        if (parts.length < 3)
-        {
-            parts.push(currentYear);
-        }
-        if (parts[2] < 1000)
-        {
-            parts[2] = (currentYear - (currentYear % 1000)) + parseInt(parts[2]);
-        }
-        
-        var date = new Date(parts[2], parts[1] - 1, parts[0]);
-        return date;
+        dateString = dateString.split("T")[0];
+        var dateParts = dateString.split("-");
+        return dateParts[1] + "/" + dateParts[2] + "/" + dateParts[0];
     }
     
     // Constants
     var controllerDateFormatRegex = /^[0-9]{1,2}\/[0-9]{1,2}(\/[0-9]{2,4})?$/g;
     var controllerHoursFormatRegex = /^[0-9]+$/g;
-    var controllerRecordFormatRegex = /\`([0-9]+)h on ([0-9]{1,2}\/[0-9]{1,2}(\/[0-9]{2,4})?)\`(.*)/g;
+    var controllerRecordFormatRegex = /\`([0-9]+)h`(.*)/g;
     
     var controllerUsernameCookie = "hubtime.username";
     var controllerPasswordCookie = "hubtime.password";
@@ -64,7 +53,7 @@ function controller()
         self.activityIndicator = $("#activity-indicator");
         self.recordsTable = $("#records-table");
         
-        self.newRecordDateInput = $("#new-record-date-input");
+        self.newRecordDate = $("#new-record-date");
         self.newRecordTaskSelector = $("#new-record-task-selector");
         self.newRecordHoursInput = $("#new-record-hours-input");
         self.newRecordCommentInput = $("#new-record-comment-input");
@@ -74,7 +63,6 @@ function controller()
         // Responders
         self.signInButton.click(self.signInButtonWasPressed);
         self.projectSelector.change(self.projectSelectorSelectionDidChange);
-        self.newRecordDateInput.keyup(self.newRecordDateInputTextDidChange);
         self.newRecordHoursInput.keyup(self.newRecordHoursInputTextDidChange);
         self.newRecordAddButton.click(self.newRecordAddButtonWasPressed);
         
@@ -101,12 +89,9 @@ function controller()
             'password': password
         };
     
-        self.startActivityIndicator();
         var userRequest = $.get('', userRequestData);
         userRequest.success(function(user)
         {
-            self.stopActivityIndicator();
-        
             self.user = user;
             self.user.password = password;
             
@@ -125,7 +110,6 @@ function controller()
             var firstName = self.user.name.split(" ")[0];
             self.welcomeMessage.text(controllerWelcomeMessage + firstName);
             
-            self.startActivityIndicator();
             var reposRequestData = {
                 'method': 'GET',
                 'target': 'repos',
@@ -146,17 +130,16 @@ function controller()
                     self.projectSelector.append(projectOption);
                 }
                 
-                self.stopActivityIndicator();
                 self.updateRecordsTable();
             });
-            reposRequest.error(function()
+            reposRequest.error(function(request, status, error)
             {
-                self.stopActivityIndicator();
+                console.log(error);
             });
         });
-        userRequest.error(function()
+        userRequest.error(function(request, status, error)
         {
-            self.stopActivityIndicator();
+            console.log(error);
             
             self.usernameInput.parent().addClass("error");
             self.passwordInput.parent().addClass("error");
@@ -165,8 +148,6 @@ function controller()
     
     self.updateRecordsTable = function()
     {
-        self.startActivityIndicator();
-    
         // Remove Old Data
         var records = self.recordsTable.find("tr");
         $.each(records, function(recordIndex, record)
@@ -178,7 +159,7 @@ function controller()
             }
         });
     
-        self.newRecordDateInput.val("");
+        self.newRecordDate.text(parseDate(new Date().toISOString()));
         self.newRecordTaskSelector.empty();
         self.newRecordHoursInput.val("");
         self.newRecordCommentInput.val("");
@@ -199,8 +180,6 @@ function controller()
         var milestonesRequest = $.get('', milestonesRequestData);
         milestonesRequest.success(function(milestones)
         {
-            self.stopActivityIndicator();
-        
             for (var milestoneIndex in milestones)
             {
                 var milestone = milestones[milestoneIndex];
@@ -221,12 +200,9 @@ function controller()
                 };
                 
                 // Add Issues to Task Selector
-                self.startActivityIndicator();
                 var issuesRequest = $.get('', issuesRequestData);
                 issuesRequest.success(function(issues)
                 {
-                    self.stopActivityIndicator();
-                    
                     for (var issueIndex in issues)
                     {
                         var issue = issues[issueIndex];
@@ -247,129 +223,96 @@ function controller()
                             'issue': issue.number
                         };
                         
-                        self.startActivityIndicator();
                         var commentsRequest = $.get('', commentsRequestData)
-                        commentsRequest.success(function(comments)
+                        commentsRequest.success(function(commentsResponse)
                         {
-                            self.stopActivityIndicator();
-                            
-                            console.log(comments);
-                        });
-                        commentsRequest.error(function()
-                        {
-                            self.stopActivityIndicator();
-                        });
-                    }
-                });
-                issuesRequest.error(function()
-                {
-                    self.stopActivityIndicator();
-                });
-            }
-        });
-        milestonesRequest.error(function()
-        {
-            self.stopActivityIndicator();
-        });
-        
-        /*                        
-                        self.currentRepo.issueComments(issue, function(issue, error, comments)
-                        {
-                            if (error)
-                            {
-                                self.stopActivityIndicator();
-                                return;
-                            }
+                            var comments = commentsResponse.comments;
+                            var issue = commentsResponse.issue;
                             
                             var recordsTableBody = self.recordsTable.children("tbody");
                             var recordsForSorting = [];
+                            
                             for (var commentIndex in comments)
                             {
-                                controllerRecordFormatRegex.compile(controllerRecordFormatRegex);
                                 var comment = comments[commentIndex];
+                                controllerRecordFormatRegex.compile(controllerRecordFormatRegex);
                                 
                                 if (controllerRecordFormatRegex.test(comment.body))
                                 {
                                     controllerRecordFormatRegex.compile(controllerRecordFormatRegex);
                                     matches = controllerRecordFormatRegex.exec(comment.body);
                                     
-                                    var record = {
-                                        "hours": matches[1],
-                                        "date": matches[2],
-                                        "comment": parseContent(comment.body, matches[0])
-                                    };
+                                    comment.hours = matches[1];
+                                    comment.comment = parseContent(comment.body, matches[0]);
                                     
                                     var recordTableEntry = $("<tr/>");
                                     recordTableEntry.addClass("record");
                                     recordTableEntry.attr("number", comment.id);
                                     
                                     var recordTableEntryDate = $("<td/>");
-                                    recordTableEntryDate.text(record.date);
+                                    recordTableEntryDate.text(parseDate(comment.date));
                                     recordTableEntry.append(recordTableEntryDate);
                                     
                                     var recordTableEntryTask = $("<td/>");
                                     var recordTableEntryTaskLink = $("<a/>");
                                     recordTableEntryTaskLink.text(issue.title);
                                     recordTableEntryTaskLink.attr("href", issue.html_url);
+                                    recordTableEntryTaskLink.attr("target", "_blank");
                                     recordTableEntryTask.append(recordTableEntryTaskLink);
                                     recordTableEntry.append(recordTableEntryTask);
                                     
                                     var recordTableEntryHours = $("<td/>");
-                                    recordTableEntryHours.text(record.hours);
+                                    recordTableEntryHours.text(comment.hours);
                                     recordTableEntry.append(recordTableEntryHours);
                                     
-                                    var recordTableEntryComments = $("<td/>");
-                                    recordTableEntryComments.text(record.comment);
-                                    recordTableEntry.append(recordTableEntryComments);
+                                    var recordTableEntryComment = $("<td/>");
+                                    var recordTableEntryCommentLink = $("<a/>");
+                                    recordTableEntryCommentLink.text(comment.comment);
+                                    recordTableEntryCommentLink.attr("href", comment.url);
+                                    recordTableEntryCommentLink.attr("target", "_blank");
+                                    recordTableEntryComment.append(recordTableEntryCommentLink);
+                                    recordTableEntry.append(recordTableEntryComment);
                                     
                                     var recordTableEntryControl = $("<td/>");
                                     var recordTableEntryControlRemoveButton = $("<button/>");
+                                    recordTableEntryControlRemoveButton.attr("comment-number", comment.id);
                                     recordTableEntryControlRemoveButton.addClass("btn");
                                     recordTableEntryControlRemoveButton.addClass("btn-small");
                                     recordTableEntryControlRemoveButton.addClass("btn-danger");
-                                    recordTableEntryControlRemoveButton.html("<i class='icon-remove icon-white'></i>");
+                                    var recordTableEntryControlRemoveButtonImage = $("<i/>");
+                                    recordTableEntryControlRemoveButtonImage.addClass('icon-remove');
+                                    recordTableEntryControlRemoveButtonImage.addClass('icon-white');
+                                    recordTableEntryControlRemoveButtonImage.attr("comment-number", comment.id);
+                                    recordTableEntryControlRemoveButton.append(recordTableEntryControlRemoveButtonImage);
                                     recordTableEntryControlRemoveButton.click(self.removeRecordButtonWasPressed);
                                     recordTableEntryControl.append(recordTableEntryControlRemoveButton);
                                     recordTableEntry.append(recordTableEntryControl);
                                     
-                                    recordsForSorting.push(recordTableEntry);
+                                    recordsTableBody.prepend(recordTableEntry);
                                 }
                             }
-                            
-                            // Sort Records
-                            recordsForSorting.sort(function(recordA, recordB)
-                            {
-                                recordA = $(recordA.children()[0]);
-                                recordB = $(recordB.children()[0]);
-                                
-                                var recordADate = parseDate(recordA);
-                                var recordBDate = parseDate(recordB);
-                                
-                                if (recordADate == recordBDate)
-                                    return 0;
-                                else
-                                    return recordADate > recordBDate? -1 : 1;
-                            });
-                            $.each(recordsForSorting, function(recordIndex, record)
-                            {
-                                var record = $(record);
-                                recordsTableBody.prepend(record);
-                            });
+                        });
+                        commentsRequest.error(function(request, status, error)
+                        {
+                            console.log(error);
                         });
                     }
-                    self.newRecordTaskSelector.removeAttr("selected");
+                });
+                issuesRequest.error(function(request, status, error)
+                {
+                    console.log(error);
                 });
             }
-            
-            self.stopActivityIndicator();
-        });*/
+        });
+        milestonesRequest.error(function(request, status, error)
+        {
+            console.log(error);
+        });
     }
     
     self.updateNewRecordAddButton = function()
     {
         var buttonEnabled = true;
-        buttonEnabled &= !self.newRecordDateInput.parent().hasClass("error");
-        buttonEnabled &= Boolean(self.newRecordDateInput.val());
         buttonEnabled &= !self.newRecordHoursInput.parent().hasClass("error");
         buttonEnabled &= Boolean(self.newRecordHoursInput.val());
         
@@ -397,23 +340,6 @@ function controller()
         self.updateRecordsTable();
     }
     
-    self.newRecordDateInputTextDidChange = function(event)
-    {
-        controllerDateFormatRegex.compile(controllerDateFormatRegex);
-        var newRecordDateString = self.newRecordDateInput.val();
-
-        if (controllerDateFormatRegex.test(newRecordDateString))
-        {
-            self.newRecordDateInput.parent().removeClass("error");
-        }
-        else
-        {
-            self.newRecordDateInput.parent().addClass("error");
-        }
-        
-        self.updateNewRecordAddButton();
-    }
-    
     self.newRecordHoursInputTextDidChange = function(event)
     {
         controllerHoursFormatRegex.compile(controllerHoursFormatRegex);
@@ -433,31 +359,29 @@ function controller()
     
     self.newRecordAddButtonWasPressed = function(event)
     {
-        var newRecordDate = self.newRecordDateInput.val();
         var newRecordIssueNumber = self.newRecordTaskSelector.find("option:selected").attr("number");
         var newRecordHours = self.newRecordHoursInput.val();
         var newRecordComments = self.newRecordCommentInput.val();
         
-        var recordString = "`"+ newRecordHours + "h on " + newRecordDate + "`\n\n" + newRecordComments;
+        var recordString = "`"+ newRecordHours + "h`\n\n" + newRecordComments;
         var newRecordRequestData = {
             'method': 'ADD',
-            'target': 'comment',
+            'target': 'comments',
             'username': self.user.login,
             'password': self.user.password,
+            'repo': self.currentRepo,
             'issue': newRecordIssueNumber,
             'body': recordString
         };
         
-        self.startActivityIndicator();
         var newRecordRequest = $.get('', newRecordRequestData);
         newRecordRequest.success(function()
         {
-            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
-        newRecordRequest.error(function()
+        newRecordRequest.error(function(request, status, error)
         {
-            self.stopActivityIndicator();
+            console.log(error);
             self.updateRecordsTable();
         });
     }
@@ -465,29 +389,24 @@ function controller()
     self.removeRecordButtonWasPressed = function(event)
     {
         var removeRecordButton = $(event.target);
-        var recordEntry = removeRecordButton.parent().parent();
-        if (!recordEntry.attr("number"))
-            recordEntry = recordEntry.parent();
-        
-        var recordCommentNumber = recordEntry.attr("number");
+        var recordCommentNumber = removeRecordButton.attr("comment-number");
         var removeRecordRequestData = {
             'method': 'DEL',
-            'target': 'comment',
+            'target': 'comments',
             'username': self.user.login,
             'password': self.user.password,
+            'repo': self.currentRepo,
             'comment': recordCommentNumber
         };
         
-        self.startActivityIndicator();
         var removeRecordRequest = $.get('', removeRecordRequestData);
         removeRecordRequest.success(function()
         {
-            self.stopActivityIndicator();
             self.updateRecordsTable();
         });
-        removeRecordRequest.error(function()
+        removeRecordRequest.error(function(request, status, error)
         {
-            self.stopActivityIndicator();
+            console.log(error);
             self.updateRecordsTable();
         });
     }
@@ -495,6 +414,11 @@ function controller()
     // Controllers
     self.startActivityIndicator = function()
     {
+        self.projectSelector.attr("disabled", true);
+        self.newRecordTaskSelector.attr("disabled", true);
+        self.newRecordAddButton.attr("disabled", true);
+        self.recordRemoveButtons.attr("disabled", true);
+    
         self.activityIndicator.show();
         setInterval(function()
         {
@@ -524,5 +448,10 @@ function controller()
     self.stopActivityIndicator = function()
     {
         self.activityIndicator.hide();
+        
+        self.projectSelector.removeAttr("disabled");
+        self.newRecordTaskSelector.removeAttr("disabled");
+        self.updateNewRecordAddButton();
+        self.recordRemoveButtons.removeAttr("disabled");
     }
 }

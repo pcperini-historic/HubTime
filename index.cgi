@@ -107,15 +107,20 @@ if __name__ == "__main__":
                 comments = [{
                     'id': comment.id,
                     'body': comment.body,
+                    'url': issue.html_url + "#issuecomment-" + str(comment.id),
+                    'date': comment.created_at.date().isoformat()
+                } for comment in comments if comment.user.login == username]
+                commentsResponse = {
                     'issue':
                     {
                         'title': issue.title,
                         'number': issue.number,
                         'html_url': issue.html_url,
                         'milestone_number': issue.milestone.number
-                    }
-                } for comment in comments if comment.user.login == username]
-                write(json.dumps(comments), "application/json")
+                    },
+                    'comments': comments
+                }
+                write(json.dumps(commentsResponse), "application/json")
                 
             elif method == 'ADD':
                 repo = urllib2.unquote(form.getvalue('repo'))
