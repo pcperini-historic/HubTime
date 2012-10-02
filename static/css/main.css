@@ -106,3 +106,17 @@ th.header
     margin-top: 4px;
     margin-bottom: 2px;
 }
+
+#refresh-button
+{
+    /* margins */
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+#logout-button
+{
+    /* margins */
+    margin-top: 4px;
+    margin-bottom: 2px;
+}

@@ -49,6 +49,8 @@ function controller()
         self.userAvatar = $("#user-avatar");
         self.welcomeMessage = $("#welcome-message");
         self.projectSelector = $("#project-selector");
+        self.refreshButton = $("#refresh-button");
+        self.logoutButton = $("#logout-button");
         
         self.activityIndicator = $("#activity-indicator");
         self.recordsTable = $("#records-table");
@@ -63,6 +65,8 @@ function controller()
         // Responders
         self.signInButton.click(self.signInButtonWasPressed);
         self.projectSelector.change(self.projectSelectorSelectionDidChange);
+        self.refreshButton.click(self.refreshButtonWasPressed);
+        self.logoutButton.click(self.logoutButtonWasPressed);
         self.newRecordHoursInput.keyup(self.newRecordHoursInputTextDidChange);
         self.newRecordAddButton.click(self.newRecordAddButtonWasPressed);
         
@@ -121,7 +125,7 @@ function controller()
             
             var reposRequest = $.get('', reposRequestData);
             reposRequest.success(function(repos)
-            {
+            {                
                 for (var repoIndex in repos)
                 {
                     var repo = repos[repoIndex];
@@ -174,6 +178,11 @@ function controller()
         // Add New Data
         var repoName = $("#project-selector option:selected").text();
         self.currentRepo = repoName;
+        if (self.currentRepo == '')
+        {
+            self.stopActivityIndicator();
+            return;
+        }
         
         var milestonesRequestData = {
             'method': 'GET',
@@ -188,6 +197,9 @@ function controller()
         milestonesRequest.success(function(milestones)
         {
             var remainingNumberOfMilestones = milestones.length;
+            if (remainingNumberOfMilestones == 0)
+                self.stopActivityIndicator();
+            
             for (var milestoneIndex in milestones)
             {
                 var milestone = milestones[milestoneIndex];
@@ -368,6 +380,18 @@ function controller()
         self.updateRecordsTable();
     }
     
+    self.refreshButtonWasPressed = function(event)
+    {
+        self.updateRecordsTable();
+    }
+    
+    self.logoutButtonWasPressed = function(event)
+    {
+        $.removeCookie(controllerUsernameCookie);
+        $.removeCookie(controllerPasswordCookie);
+        location.reload();
+    }
+    
     self.newRecordHoursInputTextDidChange = function(event)
     {
         controllerHoursFormatRegex.compile(controllerHoursFormatRegex);
@@ -449,6 +473,7 @@ function controller()
     self.startActivityIndicator = function()
     {
         self.projectSelector.attr("disabled", true);
+        self.refreshButton.attr("disabled", true);
         self.newRecordTaskSelector.attr("disabled", true);
         self.newRecordAddButton.attr("disabled", true);
         self.recordRemoveButtons.attr("disabled", true);
@@ -484,6 +509,7 @@ function controller()
         self.activityIndicator.hide();
         
         self.projectSelector.removeAttr("disabled");
+        self.refreshButton.removeAttr("disabled");
         self.newRecordTaskSelector.removeAttr("disabled");
         self.updateNewRecordAddButton();
         self.recordRemoveButtons.removeAttr("disabled");

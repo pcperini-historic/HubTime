@@ -38,7 +38,7 @@ if __name__ == "__main__":
                 user = githubInstance.users.get()
                 userInfo = {
                     'login': user.login,
-                    'name': user.name,
+                    'name': user.name if hasattr(user, 'name') else user.login,
                     'avatar_url': user.avatar_url
                 }
                 write(json.dumps(userInfo), "application/json")
@@ -58,8 +58,16 @@ if __name__ == "__main__":
             
         elif target == 'milestones':
             if method == 'GET':
-                repo = urllib2.unquote(form.getvalue('repo'))
-                milestonePages = [page for page in githubInstance.issues.milestones.list(user = username, repo = repo)]
+                repoName = urllib2.unquote(form.getvalue('repo'))
+                repoPages = [page for page in githubInstance.repos.list()]
+                
+                repoUser = None
+                for repoPage in repoPages:
+                    for repo in repoPage:
+                        if repo.name == repoName:
+                            repoUser = repo.owner.login
+                
+                milestonePages = [page for page in githubInstance.issues.milestones.list(user = repoUser, repo = repoName)]
                 
                 milestones = []
                 for milestone in milestonePages:
@@ -73,11 +81,18 @@ if __name__ == "__main__":
             
         elif target == 'issues':
             if method == 'GET':
-                repo = urllib2.unquote(form.getvalue('repo'))
+                repoName = urllib2.unquote(form.getvalue('repo'))
                 milestone = form.getvalue('milestone')
+                repoPages = [page for page in githubInstance.repos.list()]
                 
-                issuePages = [page for page in githubInstance.issues.list_by_repo(user = username, repo = repo, milestone = milestone, assignee='none', labels='HubTime')]
-                issuePages.extend([page for page in githubInstance.issues.list_by_repo(user = username, repo = repo, milestone = milestone, assignee='*', labels='HubTime')])
+                repoUser = None
+                for repoPage in repoPages:
+                    for repo in repoPage:
+                        if repo.name == repoName:
+                            repoUser = repo.owner.login
+                
+                issuePages = [page for page in githubInstance.issues.list_by_repo(user = repoUser, repo = repoName, milestone = milestone, assignee='none', labels = 'HubTime')]
+                issuePages.extend([page for page in githubInstance.issues.list_by_repo(user = repoUser, repo = repoName, milestone = milestone, assignee='*', labels = 'HubTime')])
                 
                 issues = []
                 for issue in issuePages:
@@ -93,16 +108,23 @@ if __name__ == "__main__":
             
         elif target == 'comments':
             if method == 'GET':
-                repo = urllib2.unquote(form.getvalue('repo'))
+                repoName = urllib2.unquote(form.getvalue('repo'))
                 issue = int(form.getvalue('issue'))
+                repoPages = [page for page in githubInstance.repos.list()]
                 
-                commentPages = [page for page in githubInstance.issues.comments.list(issue, user = username, repo = repo)]
+                repoUser = None
+                for repoPage in repoPages:
+                    for repo in repoPage:
+                        if repo.name == repoName:
+                            repoUser = repo.owner.login
+                
+                commentPages = [page for page in githubInstance.issues.comments.list(issue, user = repoUser, repo = repoName)]
                 
                 comments = []
                 for comment in commentPages:
                     comments.extend(comment)
                     
-                issue = githubInstance.issues.get(issue, user = username, repo = repo)
+                issue = githubInstance.issues.get(issue, user = repoUser, repo = repoName)
                     
                 comments = [{
                     'id': comment.id,
@@ -123,16 +145,30 @@ if __name__ == "__main__":
                 write(json.dumps(commentsResponse), "application/json")
                 
             elif method == 'ADD':
-                repo = urllib2.unquote(form.getvalue('repo'))
+                repoName = urllib2.unquote(form.getvalue('repo'))
                 issue = int(form.getvalue('issue'))
                 body = urllib2.unquote(form.getvalue('body'))
+                repoPages = [page for page in githubInstance.repos.list()]
                 
-                githubInstance.issues.comments.create(issue, body, user = username, repo = repo)
+                repoUser = None
+                for repoPage in repoPages:
+                    for repo in repoPage:
+                        if repo.name == repoName:
+                            repoUser = repo.owner.login
+                
+                githubInstance.issues.comments.create(issue, body, user = repoUser, repo = repoName)
                 write('true', "application/json")
                 
             elif method == 'DEL':
-                repo = urllib2.unquote(form.getvalue('repo'))
+                repoName = urllib2.unquote(form.getvalue('repo'))
                 comment = int(form.getvalue('comment'))
+                repoPages = [page for page in githubInstance.repos.list()]
                 
-                githubInstance.issues.comments.delete(comment, user = username, repo = repo)
+                repoUser = None
+                for repoPage in repoPages:
+                    for repo in repoPage:
+                        if repo.name == repoName:
+                            repoUser = repo.owner.login
+                
+                githubInstance.issues.comments.delete(comment, user = repoUser, repo = repoName)
                 write('true', "application/json")
