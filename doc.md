@@ -1,7 +1,7 @@
-- method=GET&target=user
-- method=GET&target=repos
-- method=GET&target=milestones
-- method=GET&target=issues
-- method=GET&target=comments
-- method=ADD&target=comments
-- method=DEL&target=comments
+- method=GET&target=user?username=<username>&password=<password>
+- method=GET&target=repos?username=<username>&password=<password>
+- method=GET&target=milestones?username=<username>&password=<password>&repo=<repo>
+- method=GET&target=issues?username=<username>&password=<password>&repo=<repo>&milestone=<milestone>
+- method=GET&target=comments?username=<username>&password=<password>&repo=<repo>&issue=<issue>
+- method=ADD&target=comments?username=<username>&password=<password>&repo=<repo>&issue=<issue>&body=<body>
+- method=DEL&target=comments?username=<username>&password=<password>&repo=<repo>&issue=<issue>

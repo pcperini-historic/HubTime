@@ -5,7 +5,7 @@ import sys
 import cgi
 import jinja2
 import urllib2
-from libs import github
+from pygithub3 import Github
 
 # Globals
 environment = jinja2.Environment(loader = jinja2.PackageLoader(__name__))
@@ -29,13 +29,12 @@ if __name__ == "__main__":
     else: # API
         username = urllib2.unquote(form.getvalue('username'))
         password = urllib2.unquote(form.getvalue('password'))
-        write(username+" "+password)
     
-        githubUser = github.user(username, password)
-        write(str(githubUser))
+        githubInstance = Github(login = username, password = password)
         
         if target == 'user':
-            pass
+            user = githubInstance.users.get()
+            write(str(user))
             
         elif target == 'repos':
             pass
