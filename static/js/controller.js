@@ -153,6 +153,8 @@ function controller()
     
     self.updateRecordsTable = function()
     {
+        self.startActivityIndicator();
+    
         // Remove Old Data
         var records = self.recordsTable.find("tr");
         $.each(records, function(recordIndex, record)
@@ -185,6 +187,7 @@ function controller()
         var milestonesRequest = $.get('', milestonesRequestData);
         milestonesRequest.success(function(milestones)
         {
+            var remainingNumberOfMilestones = milestones.length;
             for (var milestoneIndex in milestones)
             {
                 var milestone = milestones[milestoneIndex];
@@ -208,6 +211,12 @@ function controller()
                 var issuesRequest = $.get('', issuesRequestData);
                 issuesRequest.success(function(issues)
                 {
+                    var remainingNumberOfIssues = issues.length;
+                    if (remainingNumberOfIssues == 0)
+                        remainingNumberOfMilestones--;
+                    if (remainingNumberOfMilestones == 0)
+                        self.stopActivityIndicator();
+                    
                     for (var issueIndex in issues)
                     {
                         var issue = issues[issueIndex];
@@ -297,10 +306,22 @@ function controller()
                                     self.recordsTable.trigger("update");
                                 }
                             }
+                            
+                            remainingNumberOfIssues--;
+                            if (remainingNumberOfIssues == 0)
+                                remainingNumberOfMilestones--;
+                            if (remainingNumberOfMilestones == 0)
+                                self.stopActivityIndicator();
                         });
                         commentsRequest.error(function(request, status, error)
                         {
                             console.log(error);
+                            
+                            remainingNumberOfIssues--;
+                            if (remainingNumberOfIssues == 0)
+                                remainingNumberOfMilestones--;
+                            if (remainingNumberOfMilestones == 0)
+                                self.stopActivityIndicator();
                         });
                     }
                 });
