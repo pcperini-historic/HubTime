@@ -49,14 +49,12 @@ th.header
     float: right;
     
     /* margins */
-    margin-top: 6px;
+    margin-top: 13px;
     margin-right: 20px;
-    
-    /* sizing */
-    font-size: 18px;
     
     /* display */
     display: none;
+    opacity: .5;
 }
 
 #activity-indicator .active

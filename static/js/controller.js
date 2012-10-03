@@ -484,25 +484,15 @@ function controller()
         {
             if (self.activityIndicator.css("display") == "none")
                 return;
-
-            var activityIndicatorText = self.activityIndicator.html();
-            if (activityIndicatorText == ". . .")
-            {
-                self.activityIndicator.html("&nbsp; &nbsp; &nbsp;");
-            }
-            else if (activityIndicatorText == ". . &nbsp;")
-            {
-                self.activityIndicator.html(". . .");
-            }
-            else if (activityIndicatorText == ". &nbsp; &nbsp;")
-            {
-                self.activityIndicator.html(". . &nbsp;");
-            }
-            else // (activityIndicatorText == "&nbsp; &nbsp; &nbsp;")
-            {
-                self.activityIndicator.html(". &nbsp; &nbsp;");
-            }
-        }, 250);
+            
+            var rotation = parseInt(self.activityIndicator.attr("rotation"));
+            rotation = (rotation + 10) % 360;
+            self.activityIndicator.attr("rotation", rotation);
+            
+            self.activityIndicator.css("-webkit-transform", "rotate(" + rotation + "deg)");
+            self.activityIndicator.css("-moz-transform", "rotate(" + rotation + "deg)");
+            self.activityIndicator.css("transform", "rotate(" + rotation + "deg)");
+        }, 100);
     }
     
     self.stopActivityIndicator = function()
